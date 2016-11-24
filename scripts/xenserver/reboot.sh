@@ -1,0 +1,2 @@
+reboot -f > /dev/null &
+

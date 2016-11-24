@@ -1,0 +1,112 @@
+{
+    "provisioners": {
+      "remote_host": "{{env `HOST`}}",
+      "remote_username": "{{env `USERNAME`}}",
+      "remote_password": "{{env `PASSWORD`}}",
+    }
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "scripts/xenserver/veryfirstboot",
+            "destination": "/tmp/veryfirstboot"
+        },
+        {
+            "type": "file",
+            "source": "scripts/xenserver/chroot_script_base.sh",
+            "destination": "/tmp/chroot_script_base.sh"
+        },
+        {
+            "type": "file",
+            "source": "scripts/xenserver/chroot_script_public.sh",
+            "destination": "/tmp/chroot_script_public.sh"
+        },
+        {
+            "type": "file",
+            "source": "scripts/xenserver/dhcp-everything",
+            "destination": "/tmp/dhcp-everything"
+        },
+        {
+	    "type": "file",
+            "source": "scripts/xenserver/install_dhcp_everything.sh",
+            "destination": "/tmp/install_dhcp_everything.sh"
+        },
+        {
+            "type": "shell",
+            "scripts": [
+                "scripts/xenserver/wait_for_installer.sh",
+                "scripts/xenserver/run_in_chroot.sh",
+                "scripts/xenserver/install_dhcp_everything.sh"
+            ]
+        }
+    ],
+    "builders": [
+        {
+            "boot_command": [
+                "<wait>menu.c32",
+                "<enter><wait><tab>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<wait>",
+                "answerfile=http://{{ .HTTPIP }}:{{ .HTTPPort }}/answerfile install ",
+                "sshpassword=password atexit=shell --- /install.img<enter>"
+            ],
+            "boot_wait": "5s",
+            "guest_additions_mode": "disable",
+            "headless": false,
+            "disk_size": 102400,
+            "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+            "guest_os_type": "RedHat_64",
+            "http_directory": "http",
+            "iso_checksum_type": "sha256",
+	    "iso_checksum":"ffc14653d16cd2f856b8b58d500b215f89e7c1a0e03891c2a37b9083c3c45fe1",
+            "iso_url": "http://downloadns.citrix.com.edgesuite.net/11437/XenServer-6.6.92-main.iso",
+            "shutdown_command": "/sbin/shutdown -hP now",
+            "ssh_password": "password",
+            "ssh_port": 22,
+            "ssh_username": "root",
+            "ssh_wait_timeout": "10000s",
+            "type": "virtualbox-iso",
+            "vm_name": "XenServer",
+            "vboxmanage": [
+                ["modifyvm", "{{.Name}}", "--memory", "2048"],
+                ["modifyvm", "{{.Name}}", "--cpus", "1"]
+            ]
+        },
+        {
+            "type": "xenserver-iso",
+            "remote_host": "{{user `remote_host`}}",
+            "remote_username": "{{user `remote_username`}}",
+            "remote_password": "{{user `remote_password`}}",
+            "boot_command": [
+              "<wait10>menu.c32",
+              "<enter><wait><tab>",
+              "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+              "<wait>",
+              "answerfile=http://{{ .HTTPIP }}:{{ .HTTPPort }}/xenserver/answerfile install ", "sshpassword=vagrant atexit=shell --- /install.img<enter>"
+            ],
+            "boot_wait": "10s",
+            "disk_size": 64000,
+            "format": "vdi_vhd",
+            "http_directory": "http",
+            "http_port_min": 8000,
+            "http_port_max": 9000,
+            "iso_checksum_type": "none",
+            "iso_url": "https://iso.nocsi.org/XenServer-7.0.0-main.iso",
+            "output_directory": "out",
+            "shutdown_command": "/sbin/shutdown -hP now > /dev/null &",
+            "ssh_username": "root",
+            "ssh_password": "vagrant",
+            "ssh_port": 22,
+            "ssh_wait_timeout": 10000s,
+            "vm_name": "XenServer-nested-7.0",
+            "vm_memory": 4096
+        },
+    ],
+    "post-processors": [
+        {
+            "compression_level": 9,
+            "output": "XenServer7.0.box",
+            "type": "vagrant",
+            "vagrantfile_template": "vagrant/Vagrantfile_XenServer7.template"
+        }
+    ]
+}

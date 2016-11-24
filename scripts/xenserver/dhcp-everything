@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# DHCP everything          DHCP all of the interfaces
+#
+# chkconfig: 2345 99 99
+# description: DHCP all of the interfaces
+
+stamp=/var/lib/xcp/verylast
+
+if [ ! -e $stamp ]; then
+
+  . /etc/xensource-inventory
+  xe pif-scan host-uuid=$INSTALLATION_UUID
+
+  for i in `xe pif-list --minimal | sed s/,/\ /g`; do
+    xe pif-reconfigure-ip uuid=$i mode=dhcp
+    xe pif-unplug uuid=$i
+    xe pif-plug uuid=$i
+  done
+
+  touch $stamp
+fi
+

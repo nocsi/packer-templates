@@ -1,0 +1,60 @@
+{
+  "variables": {
+      "remote_host": "{{env `HOST`}}",
+      "remote_username": "{{env `USERNAME`}}",
+      "remote_password": "{{env `PASSWORD`}}",
+      "http_port_min": "{{env `HTTP_PORT`}}{{env `HTTP_PORT_MIN`}}",
+      "http_port_max": "{{env `HTTP_PORT`}}{{env `HTTP_PORT_MAX`}}"
+  },
+  "builders": [
+    {
+      "type": "xenserver-iso",
+      "remote_host": "{{user `remote_host`}}",
+      "remote_username": "{{user `remote_username`}}",
+      "remote_password": "{{user `remote_password`}}",
+      "http_port_min": "{{user `http_port_min`}}",
+      "http_port_max": "{{user `http_port_max`}}",
+
+      "vm_name": "packer-win7",
+      "disk_size": 20000,
+      "iso_url": "https://iso.nocsi.org/7600.16385.090713-1255_x64fre_enterprise_en-us_EVAL_Eval_Enterprise-GRMCENXEVAL_EN_DVD.iso",
+      "iso_checksum_type": "sha256",
+      "iso_checksum": "2c16c73388a5c02a0ec4cd8b9e5c14ba28b7b45d13d0c9c7d44459feecc0385f",
+      "http_directory": "http",
+      "boot_wait": "10s",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_wait_timeout": "8h",
+      "tools_iso_name": "guest-tools.iso",
+      "output_directory": "/mnt/xva",
+      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+      "clone_template": "Windows 7 (64-bit)",
+      "network_names": [
+          "Host internal management network",
+          "230_XEN"
+      ],
+      "floppy_files": [
+        "./floppy/windows_7/Autounattend.xml",
+        "./scripts/windows/dis-updates.ps1",
+        "./scripts/windows/microsoft-updates.bat",
+        "./scripts/windows/win-updates.ps1",
+        "./scripts/windows/openssh.ps1",
+        "./scripts/windows/http-get.ps1"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "remote_path": "/tmp/script.bat",
+      "execute_command": "{{.Vars}} cmd /c C:/Windows/Temp/script.bat",
+      "scripts": [
+        "./scripts/windows/install-tools.bat",
+        "./scripts/windows/disable-auto-logon.bat",
+        "./scripts/windows/enable-rdp.bat",
+        "./scripts/windows/compile-dotnet-assemblies.bat",
+        "./scripts/windows/compact.bat"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "variables": {
+      "remote_host": "{{env `HOST`}}",
+      "remote_username": "{{env `USERNAME`}}",
+      "remote_password": "{{env `PASSWORD`}}",
+      "http_port_min": "{{env `HTTP_PORT`}}{{env `HTTP_PORT_MIN`}}",
+      "http_port_max": "{{env `HTTP_PORT`}}{{env `HTTP_PORT_MAX`}}"
+      "compression_level": "6",
+      "cpus": "1",
+      "disk_size": "40000",
+      "headless": "true",
+      "memory": "512",
+      "ssh_timeout": "60m",
+      "mirror": "https://iso.nocsi.org"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "guest_os_type": "Ubuntu_64",
+      "iso_url": "{{user `mirror`}}/ubuntu-12.04.5-server-amd64.iso",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "{{user `iso_checksum_type`}}",
+      "output_directory": "out",
+      "vm_name": "packer-ubuntu-12.04-amd64",
+      "disk_size": "{{user `disk_size`}},
+      "headless": "{{user `headless`}}",
+      "http_directory": "http",
+      "boot_wait": "5s",
+      "boot_command": [
+        "<esc><wait>",
+        "<esc><wait>",
+        "<enter><wait>",
+        "install ",
+        "auto-install/enable=true ",
+        "debconf/priority=critical ",
+        "preseed/url=http://{{.HTTPIP}}:{{.HTTPPort}}/ubuntu-12.04/preseed.cfg ",
+        "<enter>"
+      ],
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_timeout": "{{user `ssh_timeout`}}",
+      "ssh_username": "vagrant",
+      "shutdown_command": "sudo poweroff",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "{{user `memory`}}"],
+        ["modifyvm", "{{.Name}}", "--cpus", "{{user `cpus`}}"]
+      ]
+    },
+    {
+      "type": "xenserver-iso",
+      "remote_host": "{{user `remote_host`}}",
+      "remote_username": "{{user `remote_username`}}",
+      "remote_password": "{{user `remote_password`}}",
+      "http_port_min": "{{user `http_port_min`}}",
+      "http_port_max": "{{user `http_port_max`}}",
+
+      "vm_name": "packer-ubuntu-12.04-amd64",
+      "disk_size": 10000,
+      "iso_checksum": "7540ace2d6cdee264432f5ed987236d32edef798",
+      "iso_checksum_type": "sha1",
+      "iso_url": "https://iso.nocsi.org/ubuntu-12.04.5-server-amd64.iso",
+      "http_directory": "http",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_wait_timeout": "10000s",
+      "shutdown_command": "echo 'vagrant'|sudo -S shutdown -P now",
+      "tools_iso_name": "guest-tools.iso",
+      "output_directory": "/mnt/xva",
+      "network_names": [
+          "Host internal management network",
+          "230_XEN"
+      ],
+      "boot_command": [
+        "<esc><wait>",
+        "<esc><wait>",
+        "<enter><wait>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US<wait>",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US<wait>",
+        " netcfg/get_domain=vm<wait>",
+        " netcfg/get_hostname=vagrant<wait>",
+        " noapic<wait>",
+        " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu-12.04/preseed.cfg<wait>",
+        " -- <wait>",
+        "<enter><wait>",
+        "<wait10><wait10>",
+        "<wait10><wait10>",
+        "<down><enter>"
+      ],
+      "boot_wait": "15s"
+    }
+  ],
+  "provisioners": [{
+    "type": "shell",
+    "scripts": [
+      "scripts/ubuntu/apt.sh",
+      "scripts/ubuntu/virtualbox.sh",
+      "scripts/ubuntu-12.04/vmware.sh",
+      "scripts/ubuntu/init.sh",
+      "scripts/common/vagrant.sh",
+      "scripts/common/sshd.sh",
+      "scripts/ubuntu/cleanup.sh",
+      "scripts/common/minimize.sh"
+    ]
+  }],
+  "post-processors": [{
+    "type": "vagrant",
+    "compression_level": "{{user `compression_level`}}",
+    "output": "out/ubuntu-12.04-amd64-{{.Provider}}.box"
+  }]
+}
+

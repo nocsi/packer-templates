@@ -1,0 +1,74 @@
+{
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "vm_name": "coreos-packer",
+      "iso_checksum": "coreos-packer",
+      "iso_checksum_type": "coreos-packer",
+      "iso_url": "https://iso.nocsi.org/coreos_production_iso_image.iso",
+      "http_directory": "http",
+      "ssh_port": 22,
+      "ssh_username": "core",
+      "ssh_key_path": "https://keys.nocsi.org/nucnocsi.pub",
+      "ssh_wait_timeout": "10m",
+
+      "guest_os_type": "Linux26_64",
+      "hard_drive_interface": "sata",
+      "disk_size": 10000,
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--memory", "1024" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "1" ]
+      ],
+      "guest_additions_mode": "disable",
+
+      "boot_command": [
+        "sudo -i<center",
+        "systemctl stop sshd.socket<enter>",
+        "wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/coreos/install.yml<enter>",
+        "coreos-install -d /dev/sda -C stable -c install.yml<enter>",
+        "reboot<enter>"
+      ],
+      "boot_wait": "30s",
+      "shutdown_command": "sudo -S shutdown -P now",
+      "output_directory": "builds/packer-coreos-virtualbox",
+      "virtualbox_version_file": ".virtualbox_version"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "http/coreos/coreos-setup-environment",
+      "destination": "coreos-setup-environment"
+    },
+    {
+      "type": "file",
+      "source": "http/coreos/cloud-config.yml",
+      "destination": "cloud-config.yml"
+    },
+    {
+      "type": "shell",
+      "environment_vars" : [],
+      "scripts": [
+        "scripts/oem.sh",
+        "scripts/cleanup.sh"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "./builds/{{.Provider}}/coreos-{{user `channel`}}.box",
+      "vagrantfile_template": "http/coreos/box/Vagrantfile",
+      "include": [
+        "http/coreos/box/change_host_name.rb",
+        "http/coreos/box/configure_networks.rb"
+      ]
+    }
+  ],
+  "variables": {
+    "channel": "stable",
+    "version": "current",
+    "checksum_type": "md5",
+    "checksum": "560f13071604d492e19bbc9f0818713a"
+  }
+}

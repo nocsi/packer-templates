@@ -1,0 +1,29 @@
+VAGRANTFILE_API_VERSION = "2"
+Vagrant.configure(VAGRANT_API_VERSION) do |config|
+
+    # disable mounting of vagrant folder as its not supported on xenserver
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # disable checking for vbguest versions as its not supported on xenserver
+    if Vagrant.has_plugin?("vagrant-vbguest")
+      config.vbguest.auto_update = false
+    end
+
+    config.vm.network "private_network", auto_config: false, type: "dhcp"
+    config.vm.network "public_network", bridge: "xenbr0"
+
+    config.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", 2048]
+      v.customize [ "modifyvm", :id, "--nicpromisc2", "allow-all" ]
+      v.customize [ "modifyvm", :id, "--nicpromisc3", "allow-all" ]
+    end
+
+    config.vm.provider "xenserver" do |xs|
+      xs.xs_host = "xen-nest.nocsi.org"
+      xs.xs_username = "root"
+      xs.xs_password = "R00tPass"
+      xs.memory = 4096
+      xs.use_himn = true
+    end
+
+end
